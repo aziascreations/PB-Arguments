@@ -1,12 +1,18 @@
 ﻿;{
 ; * Arguments.pbi
-; Version: 0.0.1
+; Version: 0.0.3
 ; Author: Herwin Bozet
 ; 
 ; A basic arguments parser.
 ;
 ; License: Unlicense (Public Domain)
 ;}
+
+;- Notes
+
+; TODO: Add a way to make references to options, the references should not be freed !
+; |_> Share options between verbs basically.
+
 
 ;- Compiler Directives
 
@@ -41,6 +47,7 @@ DeclareModule Arguments
 		#Error_Parser_ExpectedArgument
 		#Error_Parser_NoVerbOrDefaultFound
 		#Error_Parser_OptionDoesNotHaveArgs
+		#Error_Parser_OptionHasValueAndMoreShorts
 	EndEnumeration
 	
 	#Error_Parser_NullPointer = #Error_NullPointer
@@ -52,6 +59,7 @@ DeclareModule Arguments
 		List Arguments.s()
 		Flags.i
 		WasUsed.b
+		Occurences.i
 	EndStructure
 	
 	Structure Verb
@@ -247,6 +255,7 @@ Module Arguments
 				*Option\Name = Name
 				*Option\Description = Description
 				*Option\Flags = Flags
+				*Option\Occurences = 0
 			EndIf
 		EndIf
 		
@@ -308,6 +317,21 @@ Module Arguments
 		If *Verb
 			ForEach *Verb\Options()
 				If *Verb\Options()\Flags & #Option_Default
+					ProcedureReturn *Verb\Options()
+				EndIf
+			Next
+		EndIf
+		
+		ProcedureReturn #Null
+	EndProcedure
+	
+	Procedure.i GetOptionByToken(*Verb.Verb, DesiredToken.c)
+		If *Verb
+			Debug "?not null"
+			ForEach *Verb\Options()
+				Debug "?"+Chr(*Verb\Options()\Token)
+				If *Verb\Options()\Token = DesiredToken
+					Debug "!ok"
 					ProcedureReturn *Verb\Options()
 				EndIf
 			Next
@@ -392,24 +416,28 @@ Module Arguments
 							LastParserError = #Error_Parser_SingleOptionReused
 							ProcedureReturn #False
 						EndIf
+						*RelevantOption\Occurences = *RelevantOption\Occurences + 1
 					Else
 						*RelevantOption\WasUsed = #True
+						*RelevantOption\Occurences = 1
 					EndIf
 					
 					If DoesOptionHaveValue(*RelevantOption)
 						Debug ">has value"
 						If DoesOptionHaveMultipleValue(*RelevantOption)
 							Debug ">has multiple"
+							
+							; FIXME: Fix it FFS !
 							; #Error_Parser_NoArgumentsForOption
-							
-							
+							Debug "!!! IGNORED !!!"
 						Else
 							Debug ">has single"
 							If ArgsLeftCount > 0
-								Debug ">has args left"
+								Debug ">has args left to read as value"
 								Protected OptionArg.s = ProgramParameter(CurrentArgIndex + 1)
 								
 								If Left(OptionArg, 1) = "-"
+									Debug "!Received another Option as arg"
 									LastParserError = #Error_Parser_ExpectedArgument
 									ProcedureReturn #False
 								EndIf
@@ -420,7 +448,7 @@ Module Arguments
 								
 								NumberOfArgumentsParsed = NumberOfArgumentsParsed + 1
 							Else
-								Debug ">has no args left"
+								Debug ">has no args left to read as value"
 								LastParserError = #Error_Parser_NoArgumentsLeft
 								ProcedureReturn #False
 							EndIf
@@ -435,6 +463,73 @@ Module Arguments
 			
 			HasFinishedParsingVerbs = #True
 		ElseIf Left(Argument, 1) = "-"
+			Debug ">short arg (is an option is implied)"
+			
+			Protected i.i
+			For i = 2 To Len(Argument)
+				Protected ShortOptionName.s = Mid(Argument, i, 1)
+				Protected ShortOptionToken.c = Asc(ShortOptionName)
+				*RelevantOption = GetOptionByToken(*CurrentParserVerb, ShortOptionToken)
+				
+				If *RelevantOption
+					Debug ">found"
+					If *RelevantOption\WasUsed
+						If Not *RelevantOption\Flags & #Option_Repeatable
+							LastParserError = #Error_Parser_SingleOptionReused
+							ProcedureReturn #False
+						EndIf
+						*RelevantOption\Occurences = *RelevantOption\Occurences + 1
+					Else
+						*RelevantOption\WasUsed = #True
+						*RelevantOption\Occurences = 1
+					EndIf
+					
+					If DoesOptionHaveValue(*RelevantOption)
+						Debug ">has value"
+						
+						If i <> Len(Argument)
+							Debug ">used too early (more short args...)"
+							LastParserError = #Error_Parser_OptionHasValueAndMoreShorts
+							ProcedureReturn #False
+						EndIf
+						
+						If DoesOptionHaveMultipleValue(*RelevantOption)
+							Debug ">has multiple"
+							
+							; FIXME: Fix it FFS !
+							; #Error_Parser_NoArgumentsForOption
+							Debug "!!! IGNORED !!!"
+						Else
+							Debug ">has single"
+							If ArgsLeftCount > 0
+								Debug ">has args left to read as value"
+								Protected ShortOptionArg.s = ProgramParameter(CurrentArgIndex + 1)
+								
+								If Left(ShortOptionArg, 1) = "-"
+									Debug "!Received another Option as arg"
+									LastParserError = #Error_Parser_ExpectedArgument
+									ProcedureReturn #False
+								EndIf
+								
+								Debug ">Arg read :)"
+								AddElement(*RelevantOption\Arguments())
+								*RelevantOption\Arguments() = ShortOptionArg
+								
+								NumberOfArgumentsParsed = NumberOfArgumentsParsed + 1
+							Else
+								Debug ">has no args left to read as value"
+								LastParserError = #Error_Parser_NoArgumentsLeft
+								ProcedureReturn #False
+							EndIf
+						EndIf
+					EndIf
+					
+				Else
+					Debug ">not found"
+					LastParserError = #Error_Parser_UnknownOption
+					ProcedureReturn #False
+				EndIf
+			Next
 			
 			HasFinishedParsingVerbs = #True
 		Else
@@ -501,12 +596,14 @@ Module Arguments
 				HasFinishedParsingVerbs = #True
 			Else
 				Debug "> WTF"
-				; This should no happen, but we might as well be sure we don't miss anything.
+				; This should not happen since there is a condition for it before,
+				;  but we might as well be sure we don't miss anything.
 				LastParserError = #Error_Parser_NoVerbOrDefaultFound
 				ProcedureReturn #False
 			EndIf
 		EndIf
 		
+		; TODO: make default case ???
 		;If Len(Argument) ; to check if it is >=2
 		
 		*CurrentParserVerb\WasUsed = #True
@@ -530,7 +627,6 @@ Module Arguments
 EndModule
 
 
-;-
 ;- Tests
 
 CompilerIf #PB_Compiler_IsMainFile
@@ -581,7 +677,7 @@ CompilerIf #PB_Compiler_IsMainFile
 			ForEach *Verb\Options()
 				Debug Space(4*Depth)+">"+Chr(*Verb\Options()\Token)+" | "+*Verb\Options()\Name
 				Debug Space(4*Depth+1)+"WasUsed: "+*Verb\Options()\WasUsed
-				Debug Space(4*Depth+1)+"Arguments:"
+				Debug Space(4*Depth+1)+"Arguments: -> ("+ListSize(*Verb\Options()\Arguments())+")"
 				ForEach *Verb\Options()\Arguments()
 					Debug Space(4*Depth+2)+*Verb\Options()\Arguments()
 				Next
