@@ -1,34 +1,15 @@
 # PB-Arguments
 
-A simple launch args parser
+A simple and powerful launch argument parser.
 
-## Summary
+This project is a reboot of my old "*[PB-Cli-Params-Parser](https://github.com/aziascreations/PB-Cli-Params-Parser)*"
+project developed in conjecture with "*[PB-GameFramework](https://github.com/aziascreations/PB-GameFramework)*".
 
+## Documentation
 
-## Core Module
+The documentation is not ready yet.
 
-This module provides the core functions of [aaa].
-
-NameSpace: Arguments
-
-CANNOT HAVE MULTIPLE ROOT VERBS !!!
-
-
-### Functions
-
-`Init().b`<br>
-Initializes some internal variables and allocates memory for the root verb structure.<br>
-Returns `#True` if the `malloc()` worked.
-
-`Finish().b`<br>
-Frees the memory allocated for the verb structures.<br>
-Returns `#True` if the root verb was not yet cleaned and was cleared properly.
-
-### 
-
-
-## Helpers Module
-
+However, there is a short example in the "*[Examples/](Examples)*" directory.
 
 ## License
 

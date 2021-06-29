@@ -1,2 +1,4 @@
 *.pbi.cfg
 *.exe
+.idea/
+*.pb.cfg

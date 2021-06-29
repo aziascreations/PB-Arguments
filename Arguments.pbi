@@ -1,11 +1,16 @@
-﻿;{
-; * Arguments.pbi
-; Version: 0.0.3
-; Author: Herwin Bozet
-; 
-; A basic arguments parser.
+﻿;{- Code Header
+; ==- Basic Info -================================
+;         Name: Arguments.pbi
+;      Version: 0.0.4
+;       Author: Herwin Bozet
 ;
-; License: Unlicense (Public Domain)
+; ==- Compatibility -=============================
+;  Compiler version: PureBasic 5.70 (x86/x64)
+;  Operating system: Windows 10 21H1 (Previous versions untested)
+; 
+; ==- Links & License -===========================
+;  License: Unlicense
+;  GitHub: ???
 ;}
 
 ;- Notes
@@ -22,6 +27,17 @@ EnableExplicit
 ;- Module declaration
 
 DeclareModule Arguments
+	;-> Semver Data
+	
+	#Version_Major = 0
+	#Version_Minor = 0
+	#Version_Patch = 4
+	#Version_Label$ = ""
+	#Version$ = "0.0.4";+"-"+#Version_Label$
+	
+	
+	;-> Enumarations
+	
 	EnumerationBinary OptionFlags
 		#Option_Default
 		#Option_HasValue
@@ -50,7 +66,13 @@ DeclareModule Arguments
 		#Error_Parser_OptionHasValueAndMoreShorts
 	EndEnumeration
 	
+	
+	;-> Constants
+	
 	#Error_Parser_NullPointer = #Error_NullPointer
+	
+	
+	;-> Structures
 	
 	Structure Option
 		Token.c
@@ -71,9 +93,15 @@ DeclareModule Arguments
 		*ParentVerb.Verb
 	EndStructure
 	
+	
+	;-> Globals
+	
 	Global *RootVerb.Verb = #Null
 	
-	;-> Basics
+	
+	;-> Procedure Declaration
+	
+	;-> > Basics
 	; Initializes the parser
 	Declare.b Init()
 	; Cleans the parser internal variables (can be re-initialized)
@@ -81,7 +109,7 @@ DeclareModule Arguments
 	Declare.b FreeVerb(*Verb.Verb)
 	Declare.b FreeOption(*Option.Option)
 	
-	;-> Checkers
+	;-> > Checkers
 	Declare.b WereVerbsUsed(*Verb.Verb)
 	Declare.b IsVerbAlreadyRegistered(*Verb.Verb, *ParentVerb.Verb)
 	Declare.b IsOptionAlreadyRegistered(*Option.Option, *ParentVerb.Verb)
@@ -99,15 +127,16 @@ DeclareModule Arguments
 		Bool(Option\Flags & (Arguments::#Option_HasMultipleValue))
 	EndMacro
 	
-	;-> Creators
+	;-> > Creators
 	Declare.i CreateVerb(Verb.s, Description.s)
 	Declare.i CreateOption(Token.c, Name.s, Description.s = #Null$, Flags.i = 0)
 	Declare.b RegisterVerb(*Verb.Verb, *ParentVerb.Verb = #Null)
 	Declare.b RegisterOption(*Option.Option, *ParentVerb.Verb = #Null)
 	
-	;-> Getters
+	;-> > Getters
 	Declare.i GetParentVerb(*Verb.Verb)
 	Declare.i GetDefaultOption(*Verb.Verb)
+	Declare.i GetOptionByToken(*Verb.Verb, DesiredToken.c)
 	Declare.i GetOptionByName(*Verb.Verb, OptionName.s)
 	Declare.i GetVerb(VerbName.s, *ContainerVerb.Verb)
 	
@@ -115,10 +144,10 @@ DeclareModule Arguments
 		Arguments::*RootVerb
 	EndMacro
 	
-	;-> Parser
+	;-> > Parser
 	; Should not be used from outside of the module !
 	;Declare.i ParseArgument(Argument.s, CurrentArgIndex.i, ArgsLeftCount.i)
-	Declare.i ParseArguments(StartIndex.i, EndIndex.i)
+	Declare.i ParseArguments(StartIndex.i = 0, EndIndex.i = -1)
 EndDeclareModule
 
 
@@ -126,16 +155,22 @@ EndDeclareModule
 ;- Module
 
 Module Arguments
+	;-> Compiler Directives
+	
 	EnableExplicit
 	
-	; Temporary variables used by the parser
+	
+	;-> Globals
+	
 	Global HasReachedEndOfOptions = #False
 	Global HasFinishedParsingVerbs = #False
 	Global LastParserError = #Error_None
 	Global *CurrentParserVerb.Verb = *RootVerb
 	
 	
-	;-> Basics
+	;-> Procedure Definition
+	
+	;-> > Basics
 	
 	Procedure.b Init()
 		*RootVerb = CreateVerb("root", #Null$)
@@ -180,7 +215,8 @@ Module Arguments
 		ProcedureReturn #False
 	EndProcedure
 	
-	;-> Checkers
+	
+	;-> > Checkers
 	
 	Procedure.b WereVerbsUsed(*Verb.Verb)
 		If *Verb
@@ -231,7 +267,7 @@ Module Arguments
 	EndProcedure
 	
 	
-	;-> Creators
+	;-> > Creators
 	
 	Procedure.i CreateVerb(Verb.s, Description.s)
 		Protected *Verb.Verb = AllocateStructure(Verb)
@@ -263,7 +299,7 @@ Module Arguments
 	EndProcedure
 	
 	
-	;-> Registerers
+	;-> > Registerers
 	
 	Procedure.b RegisterVerb(*Verb.Verb, *ParentVerb.Verb = #Null)
 		If *Verb
@@ -303,7 +339,7 @@ Module Arguments
 	EndProcedure
 	
 	
-	;-> Getters
+	;-> > Getters
 	
 	Procedure.i GetParentVerb(*Verb.Verb)
 		If *Verb
@@ -370,7 +406,8 @@ Module Arguments
 		ProcedureReturn *DesiredVerb
 	EndProcedure
 	
-	;-> Parser
+	
+	;-> > Parser
 	
 	Procedure.i ParseArgument(Argument.s, CurrentArgIndex.i, ArgsLeftCount.i)
 		Protected *RelevantOption.Option = #Null
@@ -611,8 +648,12 @@ Module Arguments
 		ProcedureReturn NumberOfArgumentsParsed
 	EndProcedure
 	
-	Procedure.i ParseArguments(StartIndex.i, EndIndex.i)
+	Procedure.i ParseArguments(StartIndex.i = 0, EndIndex.i = -1)
 		Protected i.i = StartIndex
+		
+		If EndIndex = -1
+			EndIndex = CountProgramParameters()
+		EndIf
 		
 		While i < EndIndex
 			i = i + ParseArgument(ProgramParameter(i), i, CountProgramParameters() - i)

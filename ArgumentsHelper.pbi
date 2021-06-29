@@ -1,11 +1,16 @@
-﻿;{
-; * ArgumentsHelper.pbi
-; Version: 0.0.1
-; Author: Herwin Bozet
-; 
-; A basic arguments parser.
+﻿;{- Code Header
+; ==- Basic Info -================================
+;         Name: ArgumentsHelper.pbi
+;      Version: 0.0.4
+;       Author: Herwin Bozet
 ;
-; License: Unlicense (Public Domain)
+; ==- Compatibility -=============================
+;  Compiler version: PureBasic 5.70 (x86/x64)
+;  Operating system: Windows 10 21H1 (Previous versions untested)
+; 
+; ==- Links & License -===========================
+;  License: Unlicense
+;  GitHub: ???
 ;}
 
 ;- Compiler Directives
@@ -17,11 +22,20 @@ XIncludeFile "./Arguments.pbi"
 ;- Module declaration
 
 DeclareModule ArgumentsHelper
+	;-> Semver Data
+	
+	#Version_Major = 0
+	#Version_Minor = 0
+	#Version_Patch = 4
+	#Version_Label$ = ""
+	#Version$ = "0.0.4";+"-"+#Version_Label$
+	
+	
+	;-> Procedure Declaration
+	
 	Declare.s GetSimpleHelpText(*RootVerb.Arguments::Verb)
 	
-	Declare.b RegisterOption(Token.c, Name.s, Description.s = #Null$, Flags.i = 0,
-	                         *ParentVerb.Arguments::Verb = #Null)
-	; SimpleRegisterVerb/Option
+	Declare.b RegisterOption(Token.c, Name.s, Description.s = #Null$, Flags.i = 0, *ParentVerb.Arguments::Verb = #Null)
 	
 	Declare.b WasOptionUsed(Token.c = #Null, Name.s = #Null$, *ParentVerb.Arguments::Verb = #Null)
 EndDeclareModule
@@ -30,7 +44,12 @@ EndDeclareModule
 ;- Module
 
 Module ArgumentsHelper
+	;-> Compiler Directives
+	
 	EnableExplicit
+	
+	
+	;-> Procedure Definition
 	
 	Procedure.s GetSimpleHelpText(*RootVerb.Arguments::Verb)
 		Protected HelpText$ = #Null$
@@ -75,8 +94,7 @@ Module ArgumentsHelper
 		ProcedureReturn HelpText$
 	EndProcedure
 
-	Procedure.b RegisterOption(Token.c, Name.s, Description.s = #Null$, Flags.i = 0,
-	                           *ParentVerb.Arguments::Verb = #Null)
+	Procedure.b RegisterOption(Token.c, Name.s, Description.s = #Null$, Flags.i = 0, *ParentVerb.Arguments::Verb = #Null)
 		Protected Option = Arguments::CreateOption(Token, Name, Description, Flags)
 		
 		If Option
