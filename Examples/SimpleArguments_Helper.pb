@@ -16,13 +16,12 @@
 
 EnableExplicit
 
-XIncludeFile "../Arguments.pbi"
 XIncludeFile "../ArgumentsHelper.pbi"
 
 
-;-> Initialization (Unchanged)
+;-> Initialization
 
-Arguments::Init()
+ArgumentsHelper::Init()
 
 
 ;-> Argument declaration
@@ -38,47 +37,31 @@ If Not (ArgumentsHelper::RegisterOption('h', "help", "Help text !") And
 EndIf
 
 
-;-> Argument parsing (Unchanged)
+;-> Argument parsing
 
-Define LastParserError = Arguments::ParseArguments()
-
-If LastParserError <> Arguments::#Error_None
+If ArgumentsHelper::ParseAllArguments() <> Arguments::#Error_None
 	Debug "An error occured while parsing the arguments !"
-	Debug LastParserError
 	End 3
 EndIf
 
 
 ;-> Taking actions
 
-If ArgumentsHelper::WasOptionUsed('h', "help")
+If ArgumentsHelper::SearchOptionsIfUsed('h', "help")
 	; Only 'h' or "help" can be given to the procedure and it would work perfectly fine.
 	Debug "Printing the help text..."
 EndIf
 
-If ArgumentsHelper::WasOptionUsed(#Null, "data")
+If ArgumentsHelper::SearchOptionsIfUsed(#Null, "data")
 	Debug "Data was given !"
 	
-	; For-loop technically not required if the option is not declared with Arguments::#Option_HasMultipleValue
-	;  since an error will be thrown when multiple values are given to an option with only Arguments::#Option_HasValue.
-	
-	; FIXME: Create something to make it easier
-	Define *OptionByToken.Arguments::Option = Arguments::GetOptionByToken(Arguments::*RootVerb, 'd')
-	If *OptionByToken
-		ForEach *OptionByToken\Arguments()
-			Debug "> " + *OptionByToken\Arguments()
-		Next
-	EndIf
-	
-	Define *OptionByName.Arguments::Option = Arguments::GetOptionByName(Arguments::*RootVerb, "data")
-	If *OptionByName
-		ForEach *OptionByName\Arguments()
-			Debug "> " + *OptionByName\Arguments()
-		Next
-	EndIf
+	; This exemple is especially short since there is a single value.
+	; However, it could be shorter if we kept a copy of the value returned by ArgumentsHelper::RegisterOption().
+	Debug "> "+ArgumentsHelper::GetOptionValueByIndex(ArgumentsHelper::GetOptionByToken('d'))
+	Debug "> "+ArgumentsHelper::GetOptionValueByIndex(ArgumentsHelper::GetOptionByName("data"))
 EndIf
 
 
 ;-> Cleaning up
 
-Arguments::Finish()
+ArgumentsHelper::Finish()

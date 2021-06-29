@@ -8,7 +8,7 @@
 ;   This example will show you how to manually declare, register, parse and read arguments.
 ;   The following args are available: [-h|--help] [-a] [--test] [-d|--data <TEXT>]
 ;
-;   Recommend arguments: -h -a -d "Hello World !"
+;   Recommend arguments: -h -a --test -d "Hello World !"
 ;
 ;}
 

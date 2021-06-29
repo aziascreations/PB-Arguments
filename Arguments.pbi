@@ -1,7 +1,7 @@
 ﻿;{- Code Header
 ; ==- Basic Info -================================
 ;         Name: Arguments.pbi
-;      Version: 0.0.4
+;      Version: 0.0.5
 ;       Author: Herwin Bozet
 ;
 ; ==- Compatibility -=============================
@@ -31,9 +31,9 @@ DeclareModule Arguments
 	
 	#Version_Major = 0
 	#Version_Minor = 0
-	#Version_Patch = 4
+	#Version_Patch = 5
 	#Version_Label$ = ""
-	#Version$ = "0.0.4";+"-"+#Version_Label$
+	#Version$ = "0.0.5"
 	
 	
 	;-> Enumarations
@@ -102,9 +102,7 @@ DeclareModule Arguments
 	;-> Procedure Declaration
 	
 	;-> > Basics
-	; Initializes the parser
 	Declare.b Init()
-	; Cleans the parser internal variables (can be re-initialized)
 	Declare.b Finish()
 	Declare.b FreeVerb(*Verb.Verb)
 	Declare.b FreeOption(*Option.Option)
@@ -138,7 +136,7 @@ DeclareModule Arguments
 	Declare.i GetDefaultOption(*Verb.Verb)
 	Declare.i GetOptionByToken(*Verb.Verb, DesiredToken.c)
 	Declare.i GetOptionByName(*Verb.Verb, OptionName.s)
-	Declare.i GetVerb(VerbName.s, *ContainerVerb.Verb)
+	Declare.i GetVerbByName(*ContainerVerb.Verb, VerbName.s)
 	
 	Macro GetRootVerb()
 		Arguments::*RootVerb
@@ -151,7 +149,6 @@ DeclareModule Arguments
 EndDeclareModule
 
 
-;-
 ;- Module
 
 Module Arguments
@@ -183,10 +180,13 @@ Module Arguments
 	
 	Procedure.b Finish()
 		If *RootVerb
-			ProcedureReturn FreeVerb(*RootVerb)
-		Else
-			ProcedureReturn #False
+			If FreeVerb(*RootVerb)
+				*RootVerb = #Null
+				ProcedureReturn #True
+			EndIf
 		EndIf
+		
+		ProcedureReturn #False
 	EndProcedure
 	
 	Procedure.b FreeVerb(*Verb.Verb)
@@ -363,11 +363,11 @@ Module Arguments
 	
 	Procedure.i GetOptionByToken(*Verb.Verb, DesiredToken.c)
 		If *Verb
-			Debug "?not null"
+			Debug "s> Verb given is not null"
 			ForEach *Verb\Options()
-				Debug "?"+Chr(*Verb\Options()\Token)
+				Debug "s> Checking "+Chr(*Verb\Options()\Token)
 				If *Verb\Options()\Token = DesiredToken
-					Debug "!ok"
+					Debug "s> Found !"
 					ProcedureReturn *Verb\Options()
 				EndIf
 			Next
@@ -378,11 +378,11 @@ Module Arguments
 	
 	Procedure.i GetOptionByName(*Verb.Verb, OptionName.s)
 		If *Verb
-			Debug "?not null"
+			Debug "s> Verb given is not null"
 			ForEach *Verb\Options()
-				Debug "?"+*Verb\Options()\Name
+				Debug "s> Checking "+*Verb\Options()\Name
 				If *Verb\Options()\Name = OptionName
-					Debug "!ok"
+					Debug "s> Found !"
 					ProcedureReturn *Verb\Options()
 				EndIf
 			Next
@@ -391,7 +391,7 @@ Module Arguments
 		ProcedureReturn #Null
 	EndProcedure
 	
-	Procedure.i GetVerb(VerbName.s, *ContainerVerb.Verb)
+	Procedure.i GetVerbByName(*ContainerVerb.Verb, VerbName.s)
 		Protected *DesiredVerb.Verb = #Null
 		
 		If *ContainerVerb
@@ -418,9 +418,9 @@ Module Arguments
 		Debug "Parsing: "+Argument
 		
 		If Left(Argument, 2) = "--"
-			Debug ">long arg"
+			Debug " > Long option"
 			If Len(Argument) = 2
-				Debug ">end of opts"
+				Debug " > End of options symbol"
 				If HasReachedEndOfOptions
 					LastParserError = #Error_Parser_DualEndOfOptions
 					ProcedureReturn #False
@@ -428,7 +428,7 @@ Module Arguments
 					HasReachedEndOfOptions = #True
 				EndIf
 			ElseIf HasReachedEndOfOptions
-				Debug ">default arg"
+				Debug " > Default option"
 				Protected *DefaultOption.Option = GetDefaultOption(*CurrentParserVerb)
 				
 				If *DefaultOption
@@ -439,15 +439,14 @@ Module Arguments
 					ProcedureReturn #False
 				EndIf
 			Else
-				Debug ">option"
-				; We need to parse shit
+				Debug " > Generic option"
 				Protected OptionName.s = Right(Argument, Len(Argument) - 2)
 				
 				*RelevantOption = GetOptionByName(*CurrentParserVerb, OptionName)
-				Debug "$"+OptionName
+				Debug "$> "+OptionName
 				
 				If *RelevantOption
-					Debug ">found"
+					Debug " > Found it !"
 					If *RelevantOption\WasUsed
 						If Not *RelevantOption\Flags & #Option_Repeatable
 							LastParserError = #Error_Parser_SingleOptionReused
@@ -460,39 +459,39 @@ Module Arguments
 					EndIf
 					
 					If DoesOptionHaveValue(*RelevantOption)
-						Debug ">has value"
+						Debug " > Option must have value"
 						If DoesOptionHaveMultipleValue(*RelevantOption)
-							Debug ">has multiple"
+							Debug " > Multiple values"
 							
 							; FIXME: Fix it FFS !
 							; #Error_Parser_NoArgumentsForOption
-							Debug "!!! IGNORED !!!"
+							Debug "!> Not implemented, IGNORED !"
 						Else
-							Debug ">has single"
+							Debug " > Single value"
 							If ArgsLeftCount > 0
-								Debug ">has args left to read as value"
+								Debug "?> 1+ Launch arg left to read as potential value"
 								Protected OptionArg.s = ProgramParameter(CurrentArgIndex + 1)
 								
 								If Left(OptionArg, 1) = "-"
-									Debug "!Received another Option as arg"
+									Debug "!> Received another option as a value !"
 									LastParserError = #Error_Parser_ExpectedArgument
 									ProcedureReturn #False
 								EndIf
 								
-								Debug ">Arg read :)"
+								Debug " > Value read successfully !"
 								AddElement(*RelevantOption\Arguments())
 								*RelevantOption\Arguments() = OptionArg
 								
 								NumberOfArgumentsParsed = NumberOfArgumentsParsed + 1
 							Else
-								Debug ">has no args left to read as value"
+								Debug "!> No launch args left to be read as value !"
 								LastParserError = #Error_Parser_NoArgumentsLeft
 								ProcedureReturn #False
 							EndIf
 						EndIf
 					EndIf
 				Else
-					Debug ">not found"
+					Debug " > Option not found in the current verb !"
 					LastParserError = #Error_Parser_UnknownOption
 					ProcedureReturn #False
 				EndIf
@@ -500,16 +499,19 @@ Module Arguments
 			
 			HasFinishedParsingVerbs = #True
 		ElseIf Left(Argument, 1) = "-"
-			Debug ">short arg (is an option is implied)"
+			Debug " > Short option"
 			
 			Protected i.i
 			For i = 2 To Len(Argument)
 				Protected ShortOptionName.s = Mid(Argument, i, 1)
+				
+				Debug "?> Processing '"+ShortOptionName+"'"
+				
 				Protected ShortOptionToken.c = Asc(ShortOptionName)
 				*RelevantOption = GetOptionByToken(*CurrentParserVerb, ShortOptionToken)
 				
 				If *RelevantOption
-					Debug ">found"
+					Debug " > Found !"
 					If *RelevantOption\WasUsed
 						If Not *RelevantOption\Flags & #Option_Repeatable
 							LastParserError = #Error_Parser_SingleOptionReused
@@ -522,39 +524,39 @@ Module Arguments
 					EndIf
 					
 					If DoesOptionHaveValue(*RelevantOption)
-						Debug ">has value"
+						Debug " > Has a value"
 						
 						If i <> Len(Argument)
-							Debug ">used too early (more short args...)"
+							Debug "!> Used too early (more short args...)"
 							LastParserError = #Error_Parser_OptionHasValueAndMoreShorts
 							ProcedureReturn #False
 						EndIf
 						
 						If DoesOptionHaveMultipleValue(*RelevantOption)
-							Debug ">has multiple"
+							Debug " > Has multiple values"
 							
 							; FIXME: Fix it FFS !
 							; #Error_Parser_NoArgumentsForOption
-							Debug "!!! IGNORED !!!"
+							Debug "!> Not implemented, IGNORED !"
 						Else
-							Debug ">has single"
+							Debug " > Has one value"
 							If ArgsLeftCount > 0
-								Debug ">has args left to read as value"
+								Debug "?> 1+ Launch arg left to read as potential value"
 								Protected ShortOptionArg.s = ProgramParameter(CurrentArgIndex + 1)
 								
 								If Left(ShortOptionArg, 1) = "-"
-									Debug "!Received another Option as arg"
+									Debug "!> Received another option as a value !"
 									LastParserError = #Error_Parser_ExpectedArgument
 									ProcedureReturn #False
 								EndIf
 								
-								Debug ">Arg read :)"
+								Debug " > Value read successfully !"
 								AddElement(*RelevantOption\Arguments())
 								*RelevantOption\Arguments() = ShortOptionArg
 								
 								NumberOfArgumentsParsed = NumberOfArgumentsParsed + 1
 							Else
-								Debug ">has no args left to read as value"
+								Debug "!> No launch args left to be read as value !"
 								LastParserError = #Error_Parser_NoArgumentsLeft
 								ProcedureReturn #False
 							EndIf
@@ -562,7 +564,7 @@ Module Arguments
 					EndIf
 					
 				Else
-					Debug ">not found"
+					Debug "!> Option not found in the current verb !"
 					LastParserError = #Error_Parser_UnknownOption
 					ProcedureReturn #False
 				EndIf
@@ -570,33 +572,33 @@ Module Arguments
 			
 			HasFinishedParsingVerbs = #True
 		Else
-			Debug ">verb|arg"
+			Debug " > Verb or default argument"
 			; Verb or default argument
 			If HasFinishedParsingVerbs
-				Debug ">finished verbs"
+				Debug "?> Already finished parsing verbs"
 				; We are sure we are parsing option arguments
 				*RelevantOption = GetDefaultOption(*CurrentParserVerb)
 				
 				If Not *RelevantOption
-					Debug ">no default opt"
+					Debug " > No default option in the current verb !"
 					LastParserError = #Error_Parser_NoDefaultFound
 					ProcedureReturn #False
 				EndIf
 			Else
-				Debug ">unk"
+				Debug "?> Unknown type, determining..."
 				; We will have find out it it is a verb or an option's argument
 				; We should still be at the end of the arguments.
 				
 				; We check for the verb first.
-				*RelevantVerb = GetVerb(Argument, *CurrentParserVerb)
+				*RelevantVerb = GetVerbByName(*CurrentParserVerb, Argument)
 				
 				If Not *RelevantVerb
-					Debug ">could be opt"
+					Debug "?> No appropriate verb found, could be option"
 					; We did not find a verb, we will now search for the default option
 					*RelevantOption = GetDefaultOption(*CurrentParserVerb)
 					
 					If Not *RelevantOption
-						Debug ">not opt or verb"
+						Debug "!> Not an option or a verb !"
 						LastParserError = #Error_Parser_NoVerbOrDefaultFound
 						ProcedureReturn #False
 					EndIf
@@ -605,11 +607,11 @@ Module Arguments
 			
 			; We now set the variables before finishing.
 			If *RelevantVerb
-				Debug "> doing verb"
+				Debug " > Treating as verb, changing current verb to: "+*RelevantVerb\Verb
 				*RelevantVerb\WasUsed = #True
 				*CurrentParserVerb = *RelevantVerb
 			ElseIf *RelevantOption
-				Debug "> doing opt"
+				Debug " > Treating as option"
 				If Not DoesOptionHaveValue(*RelevantOption)
 					LastParserError = #Error_Parser_OptionDoesNotHaveArgs
 					ProcedureReturn #False
@@ -617,10 +619,12 @@ Module Arguments
 				
 				If DoesOptionHaveMultipleValue(*RelevantOption)
 					; Multiple values
+					Debug " > Has multiple values"
 					AddElement(*RelevantOption\Arguments())
 					*RelevantOption\Arguments() = Argument
 				Else
 					; Single value
+					Debug " > Has one value"
 					If ListSize(*RelevantOption\Arguments()) > 0
 						LastParserError = #Error_Parser_SingleOptionReused
 						ProcedureReturn #False
@@ -632,7 +636,7 @@ Module Arguments
 				
 				HasFinishedParsingVerbs = #True
 			Else
-				Debug "> WTF"
+				Debug "!> Fatal error, this should not be hapenning !"
 				; This should not happen since there is a condition for it before,
 				;  but we might as well be sure we don't miss anything.
 				LastParserError = #Error_Parser_NoVerbOrDefaultFound
@@ -658,7 +662,6 @@ Module Arguments
 		While i < EndIndex
 			i = i + ParseArgument(ProgramParameter(i), i, CountProgramParameters() - i)
 			If LastParserError <> #Error_None
-				;ProcedureReturn #False
 				Break
 			EndIf
 		Wend
