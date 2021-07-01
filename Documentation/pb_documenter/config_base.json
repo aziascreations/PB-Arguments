@@ -1,0 +1,28 @@
+{
+    "tokeniser": {
+        "_": "Part of the tool that converts PureBasic code into tokens.",
+        "ignore_modules": false
+    },
+    "documenter": {
+        "_": "Part of the tool that converts token into raw HTML.",
+        "single_out_module": true,
+        "print_module_namespace": true,
+        "reference_module_in_header": false
+    },
+    "indexer": {
+        "_": "Part of the tool that creates the index.html file.",
+        "title": "Placeholder Title",
+        "version": "v0.0.0-unknown",
+        "authors": "Someone"
+    },
+    "formatter": {
+      "_": "Part of the tool that adds CSS to the documentation.",
+      "colors": {
+        "background_0": "#566f7c",
+        "background_1": "#4b626d",
+        "background_2": "#41545e"
+      },
+      "add_home_to_footer_links": true,
+      "footer_links": []
+    }
+}

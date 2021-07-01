@@ -1,0 +1,6 @@
+[
+  ["index.html", "_index", "Home"],
+  ["arguments.html", "../Arguments.pbi", "_title"],
+  ["arguments_helper.html", "../ArgumentsHelper.pbi", "_title"],
+  ["arguments_help_printer.html", "../ArgumentsHelpPrinter.pbi", "_title"]
+]

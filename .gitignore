@@ -1,8 +1,7 @@
+*.pb.cfg
 *.pbi.cfg
 *.exe
 .idea/
-*.pb.cfg
-Documentation/build/
 Documentation/output/*.html
 Documentation_Backup/
-Documentation/index.html
+Documentation/pb_documenter/__pycache__/
