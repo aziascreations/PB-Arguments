@@ -1,7 +1,7 @@
 ﻿;{- Code Header
 ; ==- Basic Info -================================
 ;         Name: ArgumentsHelper.pbi
-;      Version: 0.0.5
+;      Version: 0.0.6
 ;       Author: Herwin Bozet
 ;
 ; ==- Compatibility -=============================
@@ -10,8 +10,15 @@
 ; 
 ; ==- Links & License -===========================
 ;  License: Unlicense
-;  GitHub: ???
+;  GitHub: https://github.com/aziascreations/PB-Arguments
 ;}
+
+;- DocMaker Statements
+
+;@chapter Arguments Helper
+;@ Intro text...<br>
+;@ <b>Module Namespace</b>: ArgumentsHelper
+
 
 ;- Notes
 
@@ -32,9 +39,9 @@ DeclareModule ArgumentsHelper
 	
 	#Version_Major = 0
 	#Version_Minor = 0
-	#Version_Patch = 5
+	#Version_Patch = 6
 	#Version_Label$ = ""
-	#Version$ = "0.0.5"
+	#Version$ = "0.0.6"
 	
 	
 	;-> Procedure Declaration

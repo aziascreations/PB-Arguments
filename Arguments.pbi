@@ -1,7 +1,7 @@
 ﻿;{- Code Header
 ; ==- Basic Info -================================
 ;         Name: Arguments.pbi
-;      Version: 0.0.5
+;      Version: 0.0.6
 ;       Author: Herwin Bozet
 ;
 ; ==- Compatibility -=============================
@@ -10,13 +10,19 @@
 ; 
 ; ==- Links & License -===========================
 ;  License: Unlicense
-;  GitHub: ???
+;  GitHub: https://github.com/aziascreations/PB-Arguments
 ;}
+
+;- DocMaker Statements
+
+;@chapter Arguments
+;@ Intro text...<br>
+;@ <b>Module Namespace</b>: Arguments
+
 
 ;- Notes
 
-; TODO: Add a way to make references to options, the references should not be freed !
-; |_> Share options between verbs basically.
+; None currently...
 
 
 ;- Compiler Directives
@@ -31,39 +37,46 @@ DeclareModule Arguments
 	
 	#Version_Major = 0
 	#Version_Minor = 0
-	#Version_Patch = 5
+	#Version_Patch = 6
 	#Version_Label$ = ""
-	#Version$ = "0.0.5"
+	#Version$ = "0.0.6"
 	
 	
 	;-> Enumarations
 	
 	EnumerationBinary OptionFlags
-		#Option_Default
-		#Option_HasValue
-		#Option_HasMultipleValue
-		#Option_Repeatable
-		#Option_Hidden
+		;@name Option flags
+		;@ Binary enumeration representing the different functionalities an options can have.
+		;@ These flags are contained within the <code>Flags</code> field of the <code>Option</code> structure.
+		
+		#Option_Default             ; Indicates that the option is the default one and that any value given after an option that doesn't take a value or after the <code>--</code> keyword will be attributed to this option.<br><br>Has to be used with <code>#Option_HasValue</code> and cannot have more than one in a <code>Verb</code> !
+		#Option_HasValue			; Indicates that the option can have a value.<br><br>If an option with this functionality is encountered during the parsing process, the next launch argument will be considered as its value.<br>Unless it starts with <code>-</code>, in which case, an error will be raised.<br><br>Required by <code>#Option_Default</code> !
+		#Option_HasMultipleValue	; ???
+		#Option_Repeatable			; Indicates that the option can be repeated. (May not be fully implemented)<br><br>The amount of occurences can be found in the <code>Option.Occurences</code> structure field.<br>If <code>#Option_HasMultipleValue</code> is used, a value will need to be given for each occurences.
+		#Option_Hidden				; Indicates that the option should be hidden from any help text.
 	EndEnumeration
 	
 	Enumeration ParserErrors
-		#Error_None = #False
+		;@name Parser errors
+		;@ Enumeration representing the different errors than can be returned by the parser.
+		
+		#Error_None = #False    ; Indicates that the procedures succedded.
 		
 		;#Error_AlreadyExists
 		;#Error_ParentIsNull
 		;#Error_InsertionFailure
 		;#Error_MallocFailure
-		#Error_NullPointer
+		#Error_NullPointer    ; Indicates that the procedures was given a pointer equal to <code>#Null</code> and that it couldn't handle it properly.
 		
-		#Error_Parser_UnknownOption
-		#Error_Parser_NoDefaultFound
-		#Error_Parser_DualEndOfOptions
-		#Error_Parser_SingleOptionReused
-		#Error_Parser_NoArgumentsLeft
-		#Error_Parser_ExpectedArgument
-		#Error_Parser_NoVerbOrDefaultFound
-		#Error_Parser_OptionDoesNotHaveArgs
-		#Error_Parser_OptionHasValueAndMoreShorts
+		#Error_Parser_UnknownOption                ; Indicates that an unknown option was given as a launch argument.
+		#Error_Parser_NoDefaultFound			   ; Indicates that an option with the <code>#Option_Default</code> flag was needed but couldn't be found.<br>Most likely due to improperly formatted launch arguments.
+		#Error_Parser_DualEndOfOptions			   ; Indicates that the <code>--</code> keyword was encountered more than once.
+		#Error_Parser_SingleOptionReused		   ; Indicates that an option without the <code>#Option_Repeatable</code> flag was found more than once in the launch arguments.
+		#Error_Parser_NoArgumentsLeft			   ; ???
+		#Error_Parser_ExpectedArgument			   ; ???
+		#Error_Parser_NoVerbOrDefaultFound		   ; ???
+		#Error_Parser_OptionDoesNotHaveArgs		   ; ???
+		#Error_Parser_OptionHasValueAndMoreShorts  ; ???
 	EndEnumeration
 	
 	
@@ -170,6 +183,12 @@ Module Arguments
 	;-> > Basics
 	
 	Procedure.b Init()
+		;@ Initializes the modules and prepares the <code>*RootVerb</code> global variable.
+		
+		;@return <code>#True</code> if the initialization succeeded, <code>#False</code> otherwise.
+		
+		;@link proc Finish()
+		
 		*RootVerb = CreateVerb("root", #Null$)
 		HasReachedEndOfOptions = #False
 		HasFinishedParsingVerbs = #False
@@ -179,6 +198,15 @@ Module Arguments
 	EndProcedure
 	
 	Procedure.b Finish()
+		;@ <code>*RootVerb</code> is set to <code>#Null</code> and no global variable nor procedure except for <code>Init()</code> should be used afterward.
+		;@ The argument parser can be re-initialized afterward.
+		
+		;@return <code>#True</code> if the memory clearing process succeeded, <code>#False</code> otherwise.
+		
+		;@link proc Init()
+		;@link proc FreeVerb()
+		;@link proc FreeOption()
+		
 		If *RootVerb
 			If FreeVerb(*RootVerb)
 				*RootVerb = #Null
@@ -190,6 +218,16 @@ Module Arguments
 	EndProcedure
 	
 	Procedure.b FreeVerb(*Verb.Verb)
+		;@ Clears [internal memory].
+		;@ Any <code>Verb</code> and <code>Option</code> registered in <code>*Verb</code> cannot be used since they are also freed from memory.
+		
+		;@param *Verb Pointer to a <code>Verb</code> structure that needs to be recursively freed.
+		
+		;@return <code>#True</code> if the memory clearing process succeeded, <code>#False</code> otherwise.
+		
+		;@link proc Finish()
+		;@link proc FreeOption()
+		
 		If *Verb
 			ForEach *Verb\Verbs()
 				FreeVerb(*Verb\Verbs())
@@ -208,8 +246,19 @@ Module Arguments
 	EndProcedure
 	
 	Procedure.b FreeOption(*Option.Option)
+		;@ <code>*RootVerb</code> is set to <code>#Null</code> and no procedure except for <code>Init()</code> should be used afterward global variable.
+		;@ The argument parser can be re-initialized afterward.
+		
+		;@param *Option Pointer to a <code>Option</code> structure that needs to be freed.
+		
+		;@return <code>#True</code> if the memory clearing process succeeded, <code>#False</code> otherwise.
+		
+		;@link proc Finish()
+		;@link proc FreeVerb()
+		
 		If *Option
 			FreeStructure(*Option)
+			ProcedureReturn #True
 		EndIf
 		
 		ProcedureReturn #False
@@ -669,77 +718,3 @@ Module Arguments
 		ProcedureReturn LastParserError
 	EndProcedure
 EndModule
-
-
-;- Tests
-
-CompilerIf #PB_Compiler_IsMainFile
-	Debug "start"
-	
-	If Not Arguments::Init()
-		Debug "Failed to init Arguments"
-		End 1
-	EndIf
-	
-	Define HelpOption = Arguments::CreateOption('h', "help", "Display the help text")
-	If Not Arguments::RegisterOption(HelpOption)
-		Debug "Failed to register HelpOption !"
-		Arguments::FreeOption(HelpOption)
-	EndIf
-	
-	Define SingleValueOption = Arguments::CreateOption('t', "test", "Single value test.",
-	                                                   Arguments::#Option_HasValue)
-	If Not Arguments::RegisterOption(SingleValueOption)
-		Debug "Failed to register SingleValueOption !"
-		Arguments::FreeOption(SingleValueOption)
-	EndIf
-	
-	Define VerbAdd = Arguments::CreateVerb("add", "desc...")
-	If Not Arguments::RegisterVerb(VerbAdd)
-		Debug "Failed to register VerbAdd !"
-		Arguments::FreeVerb(VerbAdd)
-	EndIf
-	
-	; TODO: Add a way to make references to options, the references should not be freed !
-	;If Not Arguments::RegisterOption(SingleValueOption, VerbAdd)
-	;	Debug "Failed to register SingleValueOption a second time !"
-	;EndIf
-	
-	Define VerbSub = Arguments::CreateVerb("sub", "desc...")
-	If Not Arguments::RegisterVerb(VerbSub)
-		Debug "Failed to register VerbSub !"
-		Arguments::FreeVerb(VerbSub)
-	EndIf
-	
-	
-	Procedure PrintVerb(*Verb.Arguments::Verb, Depth.i = 0)
-		If *Verb
-			Debug Space(4*Depth)+"$"+*Verb\Verb
-			Debug Space(4*Depth)+"WasUsed: "+*Verb\WasUsed
-			
-			Debug Space(4*Depth)+"Options"
-			ForEach *Verb\Options()
-				Debug Space(4*Depth)+">"+Chr(*Verb\Options()\Token)+" | "+*Verb\Options()\Name
-				Debug Space(4*Depth+1)+"WasUsed: "+*Verb\Options()\WasUsed
-				Debug Space(4*Depth+1)+"Arguments: -> ("+ListSize(*Verb\Options()\Arguments())+")"
-				ForEach *Verb\Options()\Arguments()
-					Debug Space(4*Depth+2)+*Verb\Options()\Arguments()
-				Next
-			Next
-			
-			Debug Space(4*Depth)+"Verbs"
-			ForEach *Verb\Verbs()
-				PrintVerb(*Verb\Verbs(), Depth+1)
-			Next
-		EndIf
-	EndProcedure
-	
-	If Arguments::ParseArguments(0, CountProgramParameters())
-		Debug "Failed to parse !"
-	EndIf
-	Debug ""
-	
-	PrintVerb(Arguments::*RootVerb)
-	
-	Arguments::Finish()
-CompilerEndIf
