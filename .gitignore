@@ -2,3 +2,7 @@
 *.exe
 .idea/
 *.pb.cfg
+Documentation/build/
+Documentation/output/*.html
+Documentation_Backup/
+Documentation/index.html
