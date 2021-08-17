@@ -162,7 +162,7 @@ DeclareModule Arguments
 EndDeclareModule
 
 
-;- Module
+;- Module Definition
 
 Module Arguments
 	;-> Compiler Directives
